@@ -24,6 +24,10 @@ export function useDesktopStore() {
         setContextMenu({ x, y });
     }, []);
 
+    const [bsodVisible, setBsodVisible] = useState(false);
+    const showBsod = useCallback((): void => setBsodVisible(true), []);
+    const hideBsod = useCallback((): void => setBsodVisible(false), []);
+
     return {
         bootComplete,
         finishBoot,
@@ -41,5 +45,8 @@ export function useDesktopStore() {
         propertiesOpen,
         openProperties,
         closeProperties,
+        bsodVisible,
+        showBsod,
+        hideBsod,
     };
 }

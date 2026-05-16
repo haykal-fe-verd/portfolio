@@ -53,6 +53,10 @@ export function useDesktopWindows() {
         setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, position: pos } : w)));
     }, []);
 
+    const updateSize = useCallback((id: WindowId, size: { width: number; height?: number }): void => {
+        setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, ...size } : w)));
+    }, []);
+
     const arrangeIcons = useCallback((): void => {
         setWindows((prev) => prev.map((w) => ({ ...w, position: { ...w.initialPosition } })));
     }, []);
@@ -83,6 +87,7 @@ export function useDesktopWindows() {
         focusWindow,
         maximizeWindow,
         updatePosition,
+        updateSize,
         arrangeIcons,
         handleTaskbarClick,
         closeAll,

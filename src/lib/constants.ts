@@ -8,6 +8,8 @@ export const Z_INDEX = {
     PROPERTIES:    99998,
     SHUTDOWN:      99999,
     BOOT:          100000,
+    SCREENSAVER:   200000,
+    BSOD:          300000,
 } as const;
 
 export const INITIAL_WINDOWS: WindowState[] = [
@@ -20,6 +22,7 @@ export const INITIAL_WINDOWS: WindowState[] = [
     { id: "languages",      title: "Languages",                icon: "🌐", open: false, minimized: false, maximized: false, zIndex: 1, initialPosition: { x: 260, y: 110 }, position: { x: 260, y: 110 }, width: 300 },
     { id: "contact",        title: "Contact",                  icon: "✉️", open: false, minimized: false, maximized: false, zIndex: 1, initialPosition: { x: 250, y: 100 }, position: { x: 250, y: 100 }, width: 340 },
     { id: "mycomputer",     title: "My Computer",              icon: "💻", open: false, minimized: false, maximized: false, zIndex: 1, initialPosition: { x: 300, y: 120 }, position: { x: 300, y: 120 }, width: 360 },
+    { id: "recyclebin",     title: "Recycle Bin",              icon: "🗑️", open: false, minimized: false, maximized: false, zIndex: 1, initialPosition: { x: 280, y: 130 }, position: { x: 280, y: 130 }, width: 320 },
 ];
 
 export const DESKTOP_ICONS: { id: WindowId; label: string; icon: string }[] = [
@@ -32,4 +35,5 @@ export const DESKTOP_ICONS: { id: WindowId; label: string; icon: string }[] = [
     { id: "languages",      label: "Languages",      icon: "🌐" },
     { id: "contact",        label: "Contact",        icon: "✉️" },
     { id: "mycomputer",     label: "My Computer",    icon: "💻" },
+    { id: "recyclebin",     label: "Recycle Bin",    icon: "🗑️" },
 ];

@@ -13,10 +13,11 @@ type MenuItem = {
 type Props = {
     items: MenuItem[];
     onShutDown: () => void;
+    onBsod: () => void;
     onClose: () => void;
 };
 
-export default function W95StartMenu({ items, onShutDown, onClose }: Props) {
+export default function W95StartMenu({ items, onShutDown, onBsod, onClose }: Props) {
     return (
         <>
             {/* Backdrop — klik di luar untuk tutup */}
@@ -100,6 +101,17 @@ export default function W95StartMenu({ items, onShutDown, onClose }: Props) {
                         onClick={() => { onShutDown(); onClose(); }}>
                         <span style={{ fontSize: 20, lineHeight: 1, width: 24, textAlign: "center" }}>🔴</span>
                         <span>Shut Down...</span>
+                    </button>
+
+                    {/* Separator + BSOD Easter Egg */}
+                    <div className="w95-menu-separator" />
+                    <button
+                        type="button"
+                        className="w95-menu-item"
+                        style={{ gap: 10, padding: "5px 12px 5px 8px", opacity: 0.7 }}
+                        onClick={() => { onBsod(); onClose(); }}>
+                        <span style={{ fontSize: 20, lineHeight: 1, width: 24, textAlign: "center" }}>💀</span>
+                        <span>Panic...</span>
                     </button>
                 </div>
             </div>

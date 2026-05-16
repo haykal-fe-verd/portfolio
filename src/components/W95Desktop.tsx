@@ -2,10 +2,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import portfolio from "@/config/portfolio";
 import { useDesktopWindows } from "@/hooks/useDesktopWindows";
+import { useIdleTimer } from "@/hooks/useIdleTimer";
+import { useSounds } from "@/hooks/useSounds";
 import { DESKTOP_ICONS, Z_INDEX } from "@/lib/constants";
+import type { WindowId } from "@/lib/types";
 import { useDesktopStore } from "@/stores/useDesktopStore";
 import MobileSection from "./mobile/MobileSection";
 import MobileTaskbar from "./mobile/MobileTaskbar";
@@ -19,6 +22,8 @@ import ProjectsContent from "./sections/ProjectsContent";
 import SkillsContent from "./sections/SkillsContent";
 import WindowContent from "./sections/WindowContent";
 import W95BootScreen from "./W95BootScreen";
+import W95BSOD from "./W95BSOD";
+import W95Screensaver from "./W95Screensaver";
 import W95ContextMenu from "./W95ContextMenu";
 import W95Properties from "./W95Properties";
 import W95StartMenu from "./W95StartMenu";
@@ -35,6 +40,7 @@ export default function W95Desktop() {
         focusWindow,
         maximizeWindow,
         updatePosition,
+        updateSize,
         arrangeIcons,
         handleTaskbarClick,
         closeAll,
@@ -57,14 +63,40 @@ export default function W95Desktop() {
         propertiesOpen,
         openProperties,
         closeProperties,
+        bsodVisible,
+        showBsod,
+        hideBsod,
     } = useDesktopStore();
 
+    const { play } = useSounds();
+    const isIdle = useIdleTimer(30_000);
     const [tooltip, setTooltip] = useState<{ id: string; x: number; y: number } | null>(null);
 
     const handleShutDown = () => {
         closeAll();
         triggerShutDown();
     };
+
+    // Play startup sound once when the desktop first mounts (after boot screen)
+    useEffect(() => { play("startup"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Open window with open sound
+    const openWindowWithSound = useCallback((id: WindowId): void => {
+        play("open");
+        openWindow(id);
+    }, [play, openWindow]);
+
+    // BSOD keyboard shortcut: Ctrl+Shift+B
+    useEffect(() => {
+        const handler = (e: KeyboardEvent): void => {
+            if (e.ctrlKey && e.shiftKey && e.key === "B") {
+                e.preventDefault();
+                showBsod();
+            }
+        };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [showBsod]);
 
     const CONTEXT_MENU_ITEMS = [
         {
@@ -96,22 +128,14 @@ export default function W95Desktop() {
     ];
 
     const START_MENU_ITEMS = [
-        { icon: "🖥️", label: "About", onClick: () => openWindow("about") },
-        { icon: "⚙️", label: "Skills", onClick: () => openWindow("skills") },
-        {
-            icon: "💼",
-            label: "Experience",
-            onClick: () => openWindow("experience"),
-        },
-        { icon: "📁", label: "My Projects", onClick: () => openWindow("projects") },
-        { icon: "🎓", label: "Education", onClick: () => openWindow("education") },
-        {
-            icon: "🏆",
-            label: "Certifications",
-            onClick: () => openWindow("certifications"),
-        },
-        { icon: "🌐", label: "Languages", onClick: () => openWindow("languages") },
-        { icon: "✉️", label: "Contact", onClick: () => openWindow("contact") },
+        { icon: "🖥️", label: "About",          onClick: () => openWindowWithSound("about") },
+        { icon: "⚙️", label: "Skills",          onClick: () => openWindowWithSound("skills") },
+        { icon: "💼", label: "Experience",      onClick: () => openWindowWithSound("experience") },
+        { icon: "📁", label: "My Projects",     onClick: () => openWindowWithSound("projects") },
+        { icon: "🎓", label: "Education",       onClick: () => openWindowWithSound("education") },
+        { icon: "🏆", label: "Certifications",  onClick: () => openWindowWithSound("certifications") },
+        { icon: "🌐", label: "Languages",       onClick: () => openWindowWithSound("languages") },
+        { icon: "✉️", label: "Contact",         onClick: () => openWindowWithSound("contact") },
     ];
 
     if (!bootComplete) return <W95BootScreen onComplete={finishBoot} />;
@@ -170,8 +194,10 @@ export default function W95Desktop() {
                     openContextMenu(e.clientX, e.clientY);
                     closeStartMenu();
                 }}>
-                {/* Desktop icons */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2" style={{ zIndex: 1 }}>
+                {/* Desktop icons — flex-col with wrap so icons spill into a 2nd column on short screens */}
+                <div
+                    className="absolute top-4 left-4 flex flex-col flex-wrap gap-2"
+                    style={{ zIndex: 1, maxHeight: "calc(100vh - 60px)" }}>
                     {DESKTOP_ICONS.map((icon) => (
                         <div
                             key={icon.id}
@@ -185,12 +211,12 @@ export default function W95Desktop() {
                             }}
                             onDoubleClick={(e) => {
                                 e.stopPropagation();
-                                openWindow(icon.id);
+                                openWindowWithSound(icon.id);
                             }}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.stopPropagation();
-                                    openWindow(icon.id);
+                                    openWindowWithSound(icon.id);
                                 }
                                 if (e.key === " ") {
                                     e.stopPropagation();
@@ -227,14 +253,16 @@ export default function W95Desktop() {
                             icon={w.icon}
                             position={w.position}
                             onPositionChange={(pos) => updatePosition(w.id, pos)}
-                            onClose={() => closeWindow(w.id)}
+                            onClose={() => { play("close"); closeWindow(w.id); }}
                             onFocus={() => focusWindow(w.id)}
-                            onMinimize={() => minimizeWindow(w.id)}
+                            onMinimize={() => { play("minimize"); minimizeWindow(w.id); }}
                             onMaximize={() => maximizeWindow(w.id)}
+                            onSizeChange={(size) => updateSize(w.id, size)}
                             isFocused={w.zIndex === maxZ}
                             isMaximized={w.maximized}
                             zIndex={w.zIndex}
-                            width={w.width}>
+                            width={w.width}
+                            height={w.height}>
                             <WindowContent id={w.id} />
                         </W95Window>
                     );
@@ -252,7 +280,7 @@ export default function W95Desktop() {
                 {propertiesOpen && <W95Properties onClose={closeProperties} />}
 
                 {startMenuOpen && (
-                    <W95StartMenu items={START_MENU_ITEMS} onShutDown={handleShutDown} onClose={closeStartMenu} />
+                    <W95StartMenu items={START_MENU_ITEMS} onShutDown={handleShutDown} onBsod={showBsod} onClose={closeStartMenu} />
                 )}
 
                 <W95Taskbar
@@ -321,11 +349,19 @@ export default function W95Desktop() {
                 </div>
 
                 {startMenuOpen && (
-                    <W95StartMenu items={START_MENU_ITEMS} onShutDown={handleShutDown} onClose={closeStartMenu} />
+                    <W95StartMenu items={START_MENU_ITEMS} onShutDown={handleShutDown} onBsod={showBsod} onClose={closeStartMenu} />
                 )}
 
                 <MobileTaskbar startMenuOpen={startMenuOpen} onStartClick={toggleStartMenu} />
             </div>
+
+            {/* Screensaver — activates after 30s of inactivity */}
+            {bootComplete && isIdle && (
+                <W95Screensaver onDismiss={() => window.dispatchEvent(new MouseEvent("mousemove"))} />
+            )}
+
+            {/* BSOD Easter Egg */}
+            {bsodVisible && <W95BSOD onDismiss={hideBsod} />}
         </>
     );
 }

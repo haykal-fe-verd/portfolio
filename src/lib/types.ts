@@ -7,7 +7,8 @@ export type WindowId =
     | "languages"
     | "projects"
     | "contact"
-    | "mycomputer";
+    | "mycomputer"
+    | "recyclebin";
 
 export type WindowState = {
     id: WindowId;
@@ -20,4 +21,5 @@ export type WindowState = {
     initialPosition: { x: number; y: number };
     position: { x: number; y: number };
     width: number;
+    height?: number;
 };

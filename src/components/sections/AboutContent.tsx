@@ -61,7 +61,11 @@ export default function AboutContent() {
                 </div>
 
                 <div className="flex gap-2 mt-1 flex-wrap">
-                    <a className="w95-btn" style={{ fontSize: 11, textDecoration: "none" }} href={portfolio.cvUrl}>
+                    <a
+                        className="w95-btn"
+                        style={{ fontSize: 11, textDecoration: "none" }}
+                        href={portfolio.cvUrl}
+                        download="Muhammad_Haykal_CV.pdf">
                         📄 Download CV
                     </a>
                     <a className="w95-btn" style={{ fontSize: 11, textDecoration: "none" }} href={portfolio.contact[0]?.href}>

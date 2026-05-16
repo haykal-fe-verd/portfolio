@@ -7,6 +7,7 @@ import ExperienceContent from "./ExperienceContent";
 import LanguagesContent from "./LanguagesContent";
 import MyComputerContent from "./MyComputerContent";
 import ProjectsContent from "./ProjectsContent";
+import RecycleBinContent from "./RecycleBinContent";
 import SkillsContent from "./SkillsContent";
 
 export default function WindowContent({ id }: { id: WindowId }) {
@@ -20,5 +21,6 @@ export default function WindowContent({ id }: { id: WindowId }) {
         case "projects":       return <ProjectsContent />;
         case "contact":        return <ContactContent />;
         case "mycomputer":     return <MyComputerContent />;
+        case "recyclebin":     return <RecycleBinContent />;
     }
 }

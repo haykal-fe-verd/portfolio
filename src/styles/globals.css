@@ -552,3 +552,14 @@ a:hover {
     background: var(--w95-navy);
     animation: w95-boot-progress 2.5s linear forwards;
 }
+
+/* ---- BSOD ---- */
+@keyframes w95-bsod-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+.w95-bsod-cursor {
+    display: inline-block;
+    animation: w95-bsod-blink 1s step-start infinite;
+}
