@@ -8,7 +8,8 @@ export type WindowId =
     | "projects"
     | "contact"
     | "mycomputer"
-    | "recyclebin";
+    | "recyclebin"
+    | "minesweeper";
 
 export type WindowState = {
     id: WindowId;

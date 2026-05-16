@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useClock } from "@/hooks/useClock";
 import type { WindowId } from "@/lib/types";
 
@@ -16,11 +17,13 @@ type Props = {
     windows: WindowInfo[];
     onWindowClick: (id: WindowId) => void;
     onStartClick: () => void;
+    onShowDesktop: () => void;
     startMenuOpen: boolean;
 };
 
-export default function W95Taskbar({ windows, onWindowClick, onStartClick, startMenuOpen }: Props) {
+export default function W95Taskbar({ windows, onWindowClick, onStartClick, onShowDesktop, startMenuOpen }: Props) {
     const time = useClock();
+    const [dateTooltip, setDateTooltip] = useState(false);
 
     const openWindows = windows.filter((w) => w.open);
 
@@ -52,6 +55,25 @@ export default function W95Taskbar({ windows, onWindowClick, onStartClick, start
             </button>
 
             {/* Separator */}
+            <div
+                style={{
+                    width: 2,
+                    alignSelf: "stretch",
+                    margin: "2px 4px",
+                    borderLeft: "1px solid var(--w95-gray-dark)",
+                    borderRight: "1px solid var(--w95-white)",
+                }}
+            />
+
+            {/* Show Desktop button */}
+            <button
+                type="button"
+                className="w95-btn"
+                style={{ height: 22, padding: "0 6px", fontSize: 11, flexShrink: 0 }}
+                title="Show Desktop"
+                onClick={onShowDesktop}>
+                🖥️
+            </button>
             <div
                 style={{
                     width: 2,
@@ -110,9 +132,25 @@ export default function W95Taskbar({ windows, onWindowClick, onStartClick, start
             </div>
 
             {/* Systray */}
-            <div className="w95-systray" style={{ height: 22, padding: "0 8px", fontSize: 11 }}>
+            <div className="w95-systray" style={{ height: 22, padding: "0 8px", fontSize: 11, position: "relative" }}>
                 <span>🔊</span>
-                <span>{time}</span>
+                <button
+                    type="button"
+                    style={{ background: "none", border: "none", padding: 0, fontSize: 11,
+                             fontFamily: "var(--font-ui)", cursor: "default", color: "var(--w95-black)" }}
+                    onMouseEnter={() => setDateTooltip(true)}
+                    onMouseLeave={() => setDateTooltip(false)}
+                    aria-label={`Current time: ${time}`}>
+                    {time}
+                </button>
+                {dateTooltip && (
+                    <div
+                        className="w95-tooltip"
+                        style={{ position: "absolute", bottom: "calc(100% + 4px)", right: 0,
+                                 whiteSpace: "nowrap", pointerEvents: "none" }}>
+                        {new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    </div>
+                )}
             </div>
         </div>
     );

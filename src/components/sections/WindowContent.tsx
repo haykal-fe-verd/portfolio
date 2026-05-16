@@ -5,6 +5,7 @@ import ContactContent from "./ContactContent";
 import EducationContent from "./EducationContent";
 import ExperienceContent from "./ExperienceContent";
 import LanguagesContent from "./LanguagesContent";
+import MinesweeperContent from "./MinesweeperContent";
 import MyComputerContent from "./MyComputerContent";
 import ProjectsContent from "./ProjectsContent";
 import RecycleBinContent from "./RecycleBinContent";
@@ -22,5 +23,6 @@ export default function WindowContent({ id }: { id: WindowId }) {
         case "contact":        return <ContactContent />;
         case "mycomputer":     return <MyComputerContent />;
         case "recyclebin":     return <RecycleBinContent />;
+        case "minesweeper":    return <MinesweeperContent />;
     }
 }

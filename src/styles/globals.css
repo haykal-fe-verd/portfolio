@@ -563,3 +563,22 @@ a:hover {
     display: inline-block;
     animation: w95-bsod-blink 1s step-start infinite;
 }
+
+/* ---- Window open/close animation ---- */
+@keyframes w95-window-open {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1);    }
+}
+@keyframes w95-window-close {
+    from { opacity: 1; transform: scale(1);    }
+    to   { opacity: 0; transform: scale(0.85); }
+}
+.w95-window-opening {
+    animation: w95-window-open  120ms ease-out both;
+    transform-origin: top left;
+}
+.w95-window-closing {
+    animation: w95-window-close 100ms ease-in  both;
+    pointer-events: none;
+    transform-origin: top left;
+}

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import portfolio from "@/config/portfolio";
 import { useDesktopWindows } from "@/hooks/useDesktopWindows";
 import { useIdleTimer } from "@/hooks/useIdleTimer";
@@ -10,6 +10,8 @@ import { useSounds } from "@/hooks/useSounds";
 import { DESKTOP_ICONS, Z_INDEX } from "@/lib/constants";
 import type { WindowId } from "@/lib/types";
 import { useDesktopStore } from "@/stores/useDesktopStore";
+import W95AltTab from "./W95AltTab";
+import W95Clippy from "./W95Clippy";
 import MobileSection from "./mobile/MobileSection";
 import MobileTaskbar from "./mobile/MobileTaskbar";
 import AboutContent from "./sections/AboutContent";
@@ -44,6 +46,7 @@ export default function W95Desktop() {
         arrangeIcons,
         handleTaskbarClick,
         closeAll,
+        minimizeAll,
     } = useDesktopWindows();
 
     const {
@@ -66,11 +69,43 @@ export default function W95Desktop() {
         bsodVisible,
         showBsod,
         hideBsod,
+        clippyVisible,
+        showClippy,
+        hideClippy,
     } = useDesktopStore();
 
     const { play } = useSounds();
     const isIdle = useIdleTimer(30_000);
     const [tooltip, setTooltip] = useState<{ id: string; x: number; y: number } | null>(null);
+
+    // Feature 1 — Draggable Desktop Icons
+    const [iconPositions, setIconPositions] = useState<Record<string, { x: number; y: number }>>(() =>
+        Object.fromEntries(DESKTOP_ICONS.map((icon, i) => [icon.id, { x: 16, y: 16 + i * 80 }])),
+    );
+    const iconRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+    const dragDistanceRef = useRef(0);
+
+    // Feature 2 — Window close animation
+    const [closingWindows, setClosingWindows] = useState<Set<WindowId>>(new Set());
+
+    const handleCloseWithAnimation = useCallback((id: WindowId): void => {
+        play("close");
+        setClosingWindows((prev) => new Set(prev).add(id));
+        // Use setTimeout — more reliable than onAnimationEnd which can silently fail
+        // (prefers-reduced-motion, competing CSS animations, browser quirks)
+        setTimeout(() => {
+            setClosingWindows((prev) => { const s = new Set(prev); s.delete(id); return s; });
+            closeWindow(id);
+        }, 130); // 100ms animation + 30ms buffer
+    }, [play, closeWindow]);
+
+    // Feature 5 — Clippy (show once, 5s after About opens)
+    const clippyShownRef = useRef(false);
+
+    // Feature 8 — Alt+Tab
+    const [altTabVisible, setAltTabVisible] = useState(false);
+    const [altTabIndex, setAltTabIndex] = useState(0);
+    const altTabIndexRef = useRef(0);
 
     const handleShutDown = () => {
         closeAll();
@@ -86,17 +121,59 @@ export default function W95Desktop() {
         openWindow(id);
     }, [play, openWindow]);
 
-    // BSOD keyboard shortcut: Ctrl+Shift+B
+    // Keyboard shortcuts: Ctrl+Shift+B (BSOD), Alt+F4 (close), Meta/Win (start menu)
     useEffect(() => {
         const handler = (e: KeyboardEvent): void => {
-            if (e.ctrlKey && e.shiftKey && e.key === "B") {
+            if (e.ctrlKey && e.shiftKey && e.key === "B") { e.preventDefault(); showBsod(); return; }
+            if (e.altKey && e.key === "F4") {
                 e.preventDefault();
-                showBsod();
+                const focused = windows.find((w) => w.open && !w.minimized && w.zIndex === maxZ);
+                if (focused) handleCloseWithAnimation(focused.id);
+                return;
             }
+            if (e.key === "Meta" || e.key === "OS") { e.preventDefault(); toggleStartMenu(); }
         };
         document.addEventListener("keydown", handler);
         return () => document.removeEventListener("keydown", handler);
-    }, [showBsod]);
+    }, [showBsod, windows, maxZ, handleCloseWithAnimation, toggleStartMenu]);
+
+    // Clippy: show once, 5s after About window first opens
+    useEffect(() => {
+        const aboutWindow = windows.find((w) => w.id === "about");
+        if (aboutWindow?.open && !clippyShownRef.current) {
+            clippyShownRef.current = true;
+            const t = setTimeout(showClippy, 5000);
+            return () => clearTimeout(t);
+        }
+    }, [windows, showClippy]);
+
+    // Alt+Tab window switcher
+    const altTabWindows = useMemo(() => windows.filter((w) => w.open && !w.minimized), [windows]);
+
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent): void => {
+            if (!e.altKey || e.key !== "Tab") return;
+            e.preventDefault();
+            if (altTabWindows.length === 0) return;
+            setAltTabVisible(true);
+            const next = (altTabIndexRef.current + 1) % altTabWindows.length;
+            altTabIndexRef.current = next;
+            setAltTabIndex(next);
+        };
+        const onKeyUp = (e: KeyboardEvent): void => {
+            if (e.key === "Alt" && altTabVisible) {
+                const sel = altTabWindows[altTabIndexRef.current];
+                if (sel) focusWindow(sel.id);
+                setAltTabVisible(false);
+            }
+        };
+        document.addEventListener("keydown", onKeyDown);
+        document.addEventListener("keyup", onKeyUp);
+        return () => {
+            document.removeEventListener("keydown", onKeyDown);
+            document.removeEventListener("keyup", onKeyUp);
+        };
+    }, [altTabWindows, altTabVisible, focusWindow]);
 
     const CONTEXT_MENU_ITEMS = [
         {
@@ -110,7 +187,10 @@ export default function W95Desktop() {
             type: "item" as const,
             icon: "📐",
             label: "Arrange Icons",
-            onClick: arrangeIcons,
+            onClick: () => {
+                setIconPositions(Object.fromEntries(DESKTOP_ICONS.map((icon, i) => [icon.id, { x: 16, y: 16 + i * 80 }])));
+                arrangeIcons();
+            },
         },
         {
             type: "item" as const,
@@ -136,6 +216,7 @@ export default function W95Desktop() {
         { icon: "🏆", label: "Certifications",  onClick: () => openWindowWithSound("certifications") },
         { icon: "🌐", label: "Languages",       onClick: () => openWindowWithSound("languages") },
         { icon: "✉️", label: "Contact",         onClick: () => openWindowWithSound("contact") },
+        { icon: "💣", label: "Minesweeper",     onClick: () => openWindowWithSound("minesweeper") },
     ];
 
     if (!bootComplete) return <W95BootScreen onComplete={finishBoot} />;
@@ -194,34 +275,46 @@ export default function W95Desktop() {
                     openContextMenu(e.clientX, e.clientY);
                     closeStartMenu();
                 }}>
-                {/* Desktop icons — flex-col with wrap so icons spill into a 2nd column on short screens */}
-                <div
-                    className="absolute top-4 left-4 flex flex-col flex-wrap gap-2"
-                    style={{ zIndex: 1, maxHeight: "calc(100vh - 60px)" }}>
+                {/* Desktop icons — absolutely positioned, individually draggable */}
+                <div className="absolute inset-0" style={{ zIndex: 1 }}>
                     {DESKTOP_ICONS.map((icon) => (
                         <div
                             key={icon.id}
+                            ref={(el) => { if (el) iconRefs.current.set(icon.id, el); else iconRefs.current.delete(icon.id); }}
                             className={`w95-desktop-icon ${selected === icon.id ? "selected" : ""}`}
+                            style={{ position: "absolute", left: iconPositions[icon.id]?.x, top: iconPositions[icon.id]?.y, width: 72 }}
                             role="button"
                             tabIndex={0}
                             aria-label={icon.label}
-                            onClick={(e) => {
+                            onMouseDown={(e) => {
+                                if (e.button !== 0) return;
                                 e.stopPropagation();
                                 setSelected(icon.id);
+                                dragDistanceRef.current = 0;
+                                const startX = e.clientX - (iconPositions[icon.id]?.x ?? 0);
+                                const startY = e.clientY - (iconPositions[icon.id]?.y ?? 0);
+                                const onMove = (ev: MouseEvent): void => {
+                                    dragDistanceRef.current += Math.abs(ev.movementX) + Math.abs(ev.movementY);
+                                    const el = iconRefs.current.get(icon.id);
+                                    if (el) { el.style.left = `${ev.clientX - startX}px`; el.style.top = `${ev.clientY - startY}px`; }
+                                };
+                                const onUp = (ev: MouseEvent): void => {
+                                    if (dragDistanceRef.current > 5)
+                                        setIconPositions((prev) => ({ ...prev, [icon.id]: { x: ev.clientX - startX, y: ev.clientY - startY } }));
+                                    window.removeEventListener("mousemove", onMove);
+                                    window.removeEventListener("mouseup", onUp);
+                                };
+                                window.addEventListener("mousemove", onMove);
+                                window.addEventListener("mouseup", onUp);
                             }}
+                            onClick={(e) => { e.stopPropagation(); setSelected(icon.id); }}
                             onDoubleClick={(e) => {
                                 e.stopPropagation();
-                                openWindowWithSound(icon.id);
+                                if (dragDistanceRef.current <= 5) openWindowWithSound(icon.id);
                             }}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.stopPropagation();
-                                    openWindowWithSound(icon.id);
-                                }
-                                if (e.key === " ") {
-                                    e.stopPropagation();
-                                    setSelected(icon.id);
-                                }
+                                if (e.key === "Enter") { e.stopPropagation(); openWindowWithSound(icon.id); }
+                                if (e.key === " ") { e.stopPropagation(); setSelected(icon.id); }
                             }}
                             onMouseEnter={(e) => {
                                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -245,7 +338,7 @@ export default function W95Desktop() {
 
                 {/* Windows */}
                 {windows.map((w) => {
-                    if (!w.open || w.minimized) return null;
+                    if ((!w.open && !closingWindows.has(w.id)) || w.minimized) return null;
                     return (
                         <W95Window
                             key={w.id}
@@ -253,11 +346,12 @@ export default function W95Desktop() {
                             icon={w.icon}
                             position={w.position}
                             onPositionChange={(pos) => updatePosition(w.id, pos)}
-                            onClose={() => { play("close"); closeWindow(w.id); }}
+                            onClose={() => handleCloseWithAnimation(w.id)}
                             onFocus={() => focusWindow(w.id)}
                             onMinimize={() => { play("minimize"); minimizeWindow(w.id); }}
                             onMaximize={() => maximizeWindow(w.id)}
                             onSizeChange={(size) => updateSize(w.id, size)}
+                            isClosing={closingWindows.has(w.id)}
                             isFocused={w.zIndex === maxZ}
                             isMaximized={w.maximized}
                             zIndex={w.zIndex}
@@ -294,6 +388,7 @@ export default function W95Desktop() {
                     }))}
                     onWindowClick={handleTaskbarClick}
                     onStartClick={toggleStartMenu}
+                    onShowDesktop={minimizeAll}
                     startMenuOpen={startMenuOpen}
                 />
             </div>
@@ -354,6 +449,22 @@ export default function W95Desktop() {
 
                 <MobileTaskbar startMenuOpen={startMenuOpen} onStartClick={toggleStartMenu} />
             </div>
+
+            {/* Clippy Easter Egg */}
+            {clippyVisible && <W95Clippy onDismiss={hideClippy} />}
+
+            {/* Alt+Tab Window Switcher */}
+            {altTabVisible && (
+                <W95AltTab
+                    windows={altTabWindows.map((w) => ({ id: w.id, title: w.title, icon: w.icon }))}
+                    selectedIndex={altTabIndex}
+                    onClose={() => {
+                        const sel = altTabWindows[altTabIndex];
+                        if (sel) focusWindow(sel.id);
+                        setAltTabVisible(false);
+                    }}
+                />
+            )}
 
             {/* Screensaver — activates after 30s of inactivity */}
             {bootComplete && isIdle && (

@@ -28,6 +28,10 @@ export function useDesktopStore() {
     const showBsod = useCallback((): void => setBsodVisible(true), []);
     const hideBsod = useCallback((): void => setBsodVisible(false), []);
 
+    const [clippyVisible, setClippyVisible] = useState(false);
+    const showClippy = useCallback((): void => setClippyVisible(true), []);
+    const hideClippy = useCallback((): void => setClippyVisible(false), []);
+
     return {
         bootComplete,
         finishBoot,
@@ -48,5 +52,8 @@ export function useDesktopStore() {
         bsodVisible,
         showBsod,
         hideBsod,
+        clippyVisible,
+        showClippy,
+        hideClippy,
     };
 }

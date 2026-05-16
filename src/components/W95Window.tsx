@@ -15,6 +15,7 @@ type Props = {
     onMinimize: () => void;
     onMaximize: () => void;
     onSizeChange?: (size: { width: number; height: number }) => void;
+    isClosing?: boolean;
     isFocused: boolean;
     isMaximized: boolean;
     zIndex: number;
@@ -33,6 +34,7 @@ export default function W95Window({
     onMinimize,
     onMaximize,
     onSizeChange,
+    isClosing,
     isFocused,
     isMaximized,
     zIndex,
@@ -142,7 +144,7 @@ export default function W95Window({
         // tabIndex={-1} keeps it programmatically focusable without entering the tab order
         <div
             ref={windowRef}
-            className={`w95-window${isMaximized ? "" : " absolute"}`}
+            className={`w95-window${isMaximized ? "" : " absolute"} w95-window-opening${isClosing ? " w95-window-closing" : ""}`}
             style={windowStyle}
             onMouseDown={onFocus}
             role="dialog"

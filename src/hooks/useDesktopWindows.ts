@@ -78,6 +78,10 @@ export function useDesktopWindows() {
         setWindows((prev) => prev.map((w) => ({ ...w, open: false, maximized: false })));
     }, []);
 
+    const minimizeAll = useCallback((): void => {
+        setWindows((prev) => prev.map((w) => (w.open && !w.minimized ? { ...w, minimized: true } : w)));
+    }, []);
+
     return {
         windows,
         maxZ,
@@ -91,5 +95,6 @@ export function useDesktopWindows() {
         arrangeIcons,
         handleTaskbarClick,
         closeAll,
+        minimizeAll,
     };
 }
