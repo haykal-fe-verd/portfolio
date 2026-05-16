@@ -13,7 +13,9 @@ type Props = {
     onClose: () => void;
     onFocus: () => void;
     onMinimize: () => void;
+    onMaximize: () => void;
     isFocused: boolean;
+    isMaximized: boolean;
     zIndex: number;
     width?: number;
 };
@@ -27,7 +29,9 @@ export default function W95Window({
     onClose,
     onFocus,
     onMinimize,
+    onMaximize,
     isFocused,
+    isMaximized,
     zIndex,
     width = 420,
 }: Props) {
@@ -42,6 +46,7 @@ export default function W95Window({
 
     const handleTitlebarMouseDown = (e: React.MouseEvent): void => {
         if ((e.target as HTMLElement).closest(".w95-titlebar-btn")) return;
+        if (isMaximized) return;
         e.preventDefault();
         onFocus();
 
@@ -69,13 +74,21 @@ export default function W95Window({
         window.addEventListener("mouseup", onMouseUp);
     };
 
+    const windowStyle = isMaximized
+        ? { position: "fixed" as const, left: 0, top: 0, width: "100vw", height: "calc(100vh - 28px)", zIndex }
+        : { left: position.x, top: position.y, width, zIndex };
+
+    const contentStyle = isMaximized
+        ? { maxHeight: "calc(100vh - 46px)" }
+        : { maxHeight: "70vh" };
+
     return (
         // role="dialog" makes the window an interactive region, satisfying no-static-element-interactions
         // tabIndex={-1} keeps it programmatically focusable without entering the tab order
         <div
             ref={windowRef}
-            className="w95-window absolute"
-            style={{ left: position.x, top: position.y, width, zIndex }}
+            className={`w95-window${isMaximized ? "" : " absolute"}`}
+            style={windowStyle}
             onMouseDown={onFocus}
             role="dialog"
             aria-label={title}
@@ -85,7 +98,7 @@ export default function W95Window({
                 className="w95-titlebar"
                 style={{
                     background: isFocused ? "var(--w95-navy)" : "var(--w95-gray-dark)",
-                    cursor: "move",
+                    cursor: isMaximized ? "default" : "move",
                 }}
                 onMouseDown={handleTitlebarMouseDown}
                 onKeyDown={(e) => { if (e.key === "Enter") onFocus(); }}
@@ -106,8 +119,8 @@ export default function W95Window({
                     <button
                         type="button"
                         className="w95-titlebar-btn"
-                        onClick={(e) => e.stopPropagation()}>
-                        □
+                        onClick={(e) => { e.stopPropagation(); onMaximize(); }}>
+                        {isMaximized ? "❐" : "□"}
                     </button>
                     <button
                         type="button"
@@ -119,7 +132,7 @@ export default function W95Window({
             </div>
 
             {/* Content area */}
-            <div className="p-3 overflow-auto" style={{ maxHeight: "70vh" }}>
+            <div className="p-3 overflow-auto" style={contentStyle}>
                 {children}
             </div>
         </div>

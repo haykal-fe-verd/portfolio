@@ -6,7 +6,8 @@ export type WindowId =
     | "certifications"
     | "languages"
     | "projects"
-    | "contact";
+    | "contact"
+    | "mycomputer";
 
 export type WindowState = {
     id: WindowId;
@@ -14,6 +15,7 @@ export type WindowState = {
     icon: string;
     open: boolean;
     minimized: boolean;
+    maximized: boolean;
     zIndex: number;
     initialPosition: { x: number; y: number };
     position: { x: number; y: number };

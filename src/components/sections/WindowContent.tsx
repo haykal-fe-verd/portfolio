@@ -5,6 +5,7 @@ import ContactContent from "./ContactContent";
 import EducationContent from "./EducationContent";
 import ExperienceContent from "./ExperienceContent";
 import LanguagesContent from "./LanguagesContent";
+import MyComputerContent from "./MyComputerContent";
 import ProjectsContent from "./ProjectsContent";
 import SkillsContent from "./SkillsContent";
 
@@ -18,5 +19,6 @@ export default function WindowContent({ id }: { id: WindowId }) {
         case "languages":      return <LanguagesContent />;
         case "projects":       return <ProjectsContent />;
         case "contact":        return <ContactContent />;
+        case "mycomputer":     return <MyComputerContent />;
     }
 }

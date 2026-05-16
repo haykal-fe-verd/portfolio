@@ -540,3 +540,15 @@ a:hover {
     font-weight: bold;
     color: var(--w95-black);
 }
+
+/* ---- Boot Screen ---- */
+@keyframes w95-boot-progress {
+    from { width: 0%; }
+    to   { width: 100%; }
+}
+
+.w95-boot-progress-fill {
+    height: 100%;
+    background: var(--w95-navy);
+    animation: w95-boot-progress 2.5s linear forwards;
+}

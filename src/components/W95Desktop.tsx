@@ -2,6 +2,7 @@
 
 "use client";
 
+import { useState } from "react";
 import portfolio from "@/config/portfolio";
 import { useDesktopWindows } from "@/hooks/useDesktopWindows";
 import { DESKTOP_ICONS, Z_INDEX } from "@/lib/constants";
@@ -17,6 +18,7 @@ import LanguagesContent from "./sections/LanguagesContent";
 import ProjectsContent from "./sections/ProjectsContent";
 import SkillsContent from "./sections/SkillsContent";
 import WindowContent from "./sections/WindowContent";
+import W95BootScreen from "./W95BootScreen";
 import W95ContextMenu from "./W95ContextMenu";
 import W95Properties from "./W95Properties";
 import W95StartMenu from "./W95StartMenu";
@@ -31,6 +33,7 @@ export default function W95Desktop() {
         closeWindow,
         minimizeWindow,
         focusWindow,
+        maximizeWindow,
         updatePosition,
         arrangeIcons,
         handleTaskbarClick,
@@ -38,6 +41,8 @@ export default function W95Desktop() {
     } = useDesktopWindows();
 
     const {
+        bootComplete,
+        finishBoot,
         selected,
         setSelected,
         startMenuOpen,
@@ -53,6 +58,8 @@ export default function W95Desktop() {
         openProperties,
         closeProperties,
     } = useDesktopStore();
+
+    const [tooltip, setTooltip] = useState<{ id: string; x: number; y: number } | null>(null);
 
     const handleShutDown = () => {
         closeAll();
@@ -106,6 +113,8 @@ export default function W95Desktop() {
         { icon: "🌐", label: "Languages", onClick: () => openWindow("languages") },
         { icon: "✉️", label: "Contact", onClick: () => openWindow("contact") },
     ];
+
+    if (!bootComplete) return <W95BootScreen onComplete={finishBoot} />;
 
     return (
         <>
@@ -187,12 +196,26 @@ export default function W95Desktop() {
                                     e.stopPropagation();
                                     setSelected(icon.id);
                                 }
-                            }}>
+                            }}
+                            onMouseEnter={(e) => {
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                setTooltip({ id: icon.id, x: rect.left + rect.width / 2, y: rect.bottom + 4 });
+                            }}
+                            onMouseLeave={() => setTooltip(null)}>
                             <span style={{ fontSize: 32, lineHeight: 1 }}>{icon.icon}</span>
                             <span>{icon.label}</span>
                         </div>
                     ))}
                 </div>
+
+                {/* Desktop icon tooltip */}
+                {tooltip && (
+                    <div
+                        className="w95-tooltip"
+                        style={{ position: "fixed", left: tooltip.x, top: tooltip.y, transform: "translateX(-50%)", pointerEvents: "none" }}>
+                        {DESKTOP_ICONS.find((i) => i.id === tooltip.id)?.label}
+                    </div>
+                )}
 
                 {/* Windows */}
                 {windows.map((w) => {
@@ -207,7 +230,9 @@ export default function W95Desktop() {
                             onClose={() => closeWindow(w.id)}
                             onFocus={() => focusWindow(w.id)}
                             onMinimize={() => minimizeWindow(w.id)}
+                            onMaximize={() => maximizeWindow(w.id)}
                             isFocused={w.zIndex === maxZ}
+                            isMaximized={w.maximized}
                             zIndex={w.zIndex}
                             width={w.width}>
                             <WindowContent id={w.id} />

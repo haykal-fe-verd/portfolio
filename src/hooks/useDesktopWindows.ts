@@ -22,7 +22,7 @@ export function useDesktopWindows() {
     }, []);
 
     const closeWindow = useCallback((id: WindowId): void => {
-        setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, open: false } : w)));
+        setWindows((prev) => prev.map((w) => (w.id === id ? { ...w, open: false, maximized: false } : w)));
     }, []);
 
     const minimizeWindow = useCallback((id: WindowId): void => {
@@ -34,6 +34,17 @@ export function useDesktopWindows() {
         setWindows((prev) =>
             prev.map((w) =>
                 w.id === id ? { ...w, zIndex: zCounterRef.current, minimized: false } : w,
+            ),
+        );
+    }, []);
+
+    const maximizeWindow = useCallback((id: WindowId): void => {
+        zCounterRef.current++;
+        setWindows((prev) =>
+            prev.map((w) =>
+                w.id === id
+                    ? { ...w, maximized: !w.maximized, zIndex: zCounterRef.current }
+                    : w,
             ),
         );
     }, []);
@@ -60,7 +71,7 @@ export function useDesktopWindows() {
     );
 
     const closeAll = useCallback((): void => {
-        setWindows((prev) => prev.map((w) => ({ ...w, open: false })));
+        setWindows((prev) => prev.map((w) => ({ ...w, open: false, maximized: false })));
     }, []);
 
     return {
@@ -70,6 +81,7 @@ export function useDesktopWindows() {
         closeWindow,
         minimizeWindow,
         focusWindow,
+        maximizeWindow,
         updatePosition,
         arrangeIcons,
         handleTaskbarClick,
