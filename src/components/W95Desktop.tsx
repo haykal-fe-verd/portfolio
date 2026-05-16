@@ -291,16 +291,28 @@ export default function W95Desktop() {
                                 e.stopPropagation();
                                 setSelected(icon.id);
                                 dragDistanceRef.current = 0;
-                                const startX = e.clientX - (iconPositions[icon.id]?.x ?? 0);
-                                const startY = e.clientY - (iconPositions[icon.id]?.y ?? 0);
+                                const el = iconRefs.current.get(icon.id);
+                                const origX = iconPositions[icon.id]?.x ?? 0;
+                                const origY = iconPositions[icon.id]?.y ?? 0;
+                                let dx = 0, dy = 0;
                                 const onMove = (ev: MouseEvent): void => {
                                     dragDistanceRef.current += Math.abs(ev.movementX) + Math.abs(ev.movementY);
-                                    const el = iconRefs.current.get(icon.id);
-                                    if (el) { el.style.left = `${ev.clientX - startX}px`; el.style.top = `${ev.clientY - startY}px`; }
+                                    dx = ev.clientX - e.clientX;
+                                    dy = ev.clientY - e.clientY;
+                                    // Use transform so the whole icon (emoji + label) moves together
+                                    // without conflicting with React's left/top state
+                                    if (el) {
+                                        el.style.transform = `translate(${dx}px, ${dy}px)`;
+                                        el.style.zIndex = "100";
+                                    }
                                 };
-                                const onUp = (ev: MouseEvent): void => {
+                                const onUp = (): void => {
+                                    if (el) {
+                                        el.style.transform = "";
+                                        el.style.zIndex = "";
+                                    }
                                     if (dragDistanceRef.current > 5)
-                                        setIconPositions((prev) => ({ ...prev, [icon.id]: { x: ev.clientX - startX, y: ev.clientY - startY } }));
+                                        setIconPositions((prev) => ({ ...prev, [icon.id]: { x: origX + dx, y: origY + dy } }));
                                     window.removeEventListener("mousemove", onMove);
                                     window.removeEventListener("mouseup", onUp);
                                 };
