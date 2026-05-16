@@ -1,8 +1,6 @@
-/** biome-ignore-all lint/a11y/noNoninteractiveElementToInteractiveRole: <touch gestures on Win95 section> */
-
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 type Props = {
     title: string;
@@ -13,18 +11,9 @@ type Props = {
 export default function MobileSection({ title, icon, children }: Props) {
     const [open, setOpen] = useState(true);
     const toggle = (): void => setOpen((o) => !o);
-    const touchStartY = useRef(0);
 
     return (
-        <div
-            className="w95-window"
-            style={{ marginBottom: 8 }}
-            onTouchStart={(e) => { touchStartY.current = e.touches[0].clientY; }}
-            onTouchEnd={(e) => {
-                const delta = touchStartY.current - e.changedTouches[0].clientY;
-                if (delta > 50)  setOpen(false);  // swipe up = close
-                if (delta < -50) setOpen(true);   // swipe down = open
-            }}>
+        <div className="w95-window" style={{ marginBottom: 8 }}>
             <div
                 className="w95-titlebar"
                 style={{ background: "var(--w95-navy)", cursor: "pointer", userSelect: "none" }}
